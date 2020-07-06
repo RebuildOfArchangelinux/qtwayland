@@ -563,7 +563,11 @@ void QWaylandWindow::damage(const QRect &rect)
     if (mSurface == nullptr)
         return;
 
-    mSurface->damage(rect.x(), rect.y(), rect.width(), rect.height());
+    const int s = scale();
+    if (mDisplay->compositorVersion() >= 4)
+        mSurface->damage_buffer(s * rect.x(), s * rect.y(), s * rect.width(), s * rect.height());
+    else
+        mSurface->damage(rect.x(), rect.y(), rect.width(), rect.height());
 }
 
 void QWaylandWindow::safeCommit(QWaylandBuffer *buffer, const QRegion &damage)
@@ -599,8 +603,14 @@ void QWaylandWindow::commit(QWaylandBuffer *buffer, const QRegion &damage)
         return;
 
     attachOffset(buffer);
-    for (const QRect &rect: damage)
-        mSurface->damage(rect.x(), rect.y(), rect.width(), rect.height());
+    if (mDisplay->compositorVersion() >= 4) {
+        const int s = scale();
+        for (const QRect &rect: damage)
+            mSurface->damage_buffer(s * rect.x(), s * rect.y(), s * rect.width(), s * rect.height());
+    } else {
+        for (const QRect &rect: damage)
+            mSurface->damage(rect.x(), rect.y(), rect.width(), rect.height());
+    }
     Q_ASSERT(!buffer->committed());
     buffer->setCommitted();
     mSurface->commit();
