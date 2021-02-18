@@ -200,6 +200,9 @@ void QWaylandIntegration::initialize()
     QSocketNotifier *sn = new QSocketNotifier(fd, QSocketNotifier::Read, mDisplay.data());
     QObject::connect(sn, SIGNAL(activated(QSocketDescriptor)), mDisplay.data(), SLOT(flushRequests()));
 
+    // Call after eventDispatcher is fully connected, for QWaylandDisplay::forceRoundTrip()
+    mDisplay->initialize();
+
     // Qt does not support running with no screens
     mDisplay->ensureScreen();
 }

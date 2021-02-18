@@ -129,6 +129,8 @@ public:
     QWaylandDisplay(QWaylandIntegration *waylandIntegration);
     ~QWaylandDisplay(void) override;
 
+    void initialize();
+
 #if QT_CONFIG(xkbcommon)
     struct xkb_context *xkbContext() const { return mXkbContext.get(); }
 #endif
