@@ -107,6 +107,8 @@ public:
 
     QWaylandDisplay *display() const;
 
+    Qt::KeyboardModifiers queryKeyboardModifiers() const override;
+
     QList<int> possibleKeys(const QKeyEvent *event) const override;
 
     QStringList themeNames() const override;
