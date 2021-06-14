@@ -74,7 +74,10 @@ void QWaylandClientExtensionPrivate::handleRegistryGlobal(void *data, ::wl_regis
 void QWaylandClientExtension::addRegistryListener()
 {
     Q_D(QWaylandClientExtension);
-    d->waylandIntegration->display()->addRegistryListener(&QWaylandClientExtensionPrivate::handleRegistryGlobal, this);
+    if (!d->registered) {
+        d->waylandIntegration->display()->addRegistryListener(&QWaylandClientExtensionPrivate::handleRegistryGlobal, this);
+        d->registered = true;
+    }
 }
 
 QWaylandClientExtension::QWaylandClientExtension(const int ver)
