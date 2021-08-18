@@ -96,7 +96,6 @@ QWaylandWindow::QWaylandWindow(QWindow *window, QWaylandDisplay *display)
 QWaylandWindow::~QWaylandWindow()
 {
     mDisplay->destroyFrameQueue(mFrameQueue);
-    mDisplay->handleWindowDestroyed(this);
 
     delete mWindowDecoration;
 
@@ -266,6 +265,8 @@ void QWaylandWindow::reset()
 
     mMask = QRegion();
     mQueuedBuffer = nullptr;
+
+    mDisplay->handleWindowDestroyed(this);
 }
 
 QWaylandWindow *QWaylandWindow::fromWlSurface(::wl_surface *surface)
@@ -1098,10 +1099,18 @@ bool QWaylandWindow::setMouseGrabEnabled(bool grab)
     return true;
 }
 
+Qt::WindowStates QWaylandWindow::windowStates() const
+{
+    return mLastReportedWindowStates;
+}
+
 void QWaylandWindow::handleWindowStatesChanged(Qt::WindowStates states)
 {
     createDecoration();
-    QWindowSystemInterface::handleWindowStateChanged(window(), states, mLastReportedWindowStates);
+    Qt::WindowStates statesWithoutActive = states & ~Qt::WindowActive;
+    Qt::WindowStates lastStatesWithoutActive = mLastReportedWindowStates & ~Qt::WindowActive;
+    QWindowSystemInterface::handleWindowStateChanged(window(), statesWithoutActive,
+                                                     lastStatesWithoutActive);
     mLastReportedWindowStates = states;
 }
 

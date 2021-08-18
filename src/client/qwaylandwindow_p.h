@@ -148,6 +148,7 @@ public:
     void setWindowState(Qt::WindowStates states) override;
     void setWindowFlags(Qt::WindowFlags flags) override;
     void handleWindowStatesChanged(Qt::WindowStates states);
+    Qt::WindowStates windowStates() const;
 
     void raise() override;
     void lower() override;

@@ -73,11 +73,10 @@ public:
         return true;
     }
     virtual QWaylandShellSurface *createShellSurface(QWaylandWindow *window) = 0;
+    // kept for binary compat with layer-shell-qt
     virtual void handleKeyboardFocusChanged(QWaylandWindow *newFocus, QWaylandWindow *oldFocus) {
-        if (newFocus)
-            m_display->handleWindowActivated(newFocus);
-        if (oldFocus)
-            m_display->handleWindowDeactivated(oldFocus);
+        Q_UNUSED(newFocus);
+        Q_UNUSED(oldFocus);
     }
     virtual void *nativeResourceForWindow(const QByteArray &resource, QWindow *window) {
         Q_UNUSED(resource);

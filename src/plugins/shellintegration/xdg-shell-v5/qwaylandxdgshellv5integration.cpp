@@ -85,13 +85,6 @@ QWaylandShellSurface *QWaylandXdgShellV5Integration::createShellSurface(QWayland
     return m_xdgShell->createXdgSurface(window);
 }
 
-void QWaylandXdgShellV5Integration::handleKeyboardFocusChanged(QWaylandWindow *newFocus, QWaylandWindow *oldFocus) {
-    if (newFocus && qobject_cast<QWaylandXdgPopupV5 *>(newFocus->shellSurface()))
-        m_display->handleWindowActivated(newFocus);
-    if (oldFocus && qobject_cast<QWaylandXdgPopupV5 *>(oldFocus->shellSurface()))
-        m_display->handleWindowDeactivated(oldFocus);
-}
-
 }
 
 QT_END_NAMESPACE

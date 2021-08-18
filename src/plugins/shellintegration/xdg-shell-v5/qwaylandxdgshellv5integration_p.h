@@ -67,7 +67,6 @@ public:
     QWaylandXdgShellV5Integration() {}
     bool initialize(QWaylandDisplay *display) override;
     QWaylandShellSurface *createShellSurface(QWaylandWindow *window) override;
-    void handleKeyboardFocusChanged(QWaylandWindow *newFocus, QWaylandWindow *oldFocus) override;
 
 private:
     QScopedPointer<QWaylandXdgShellV5> m_xdgShell;
