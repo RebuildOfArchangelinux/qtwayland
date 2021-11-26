@@ -109,6 +109,7 @@ class QWaylandSurface;
 class QWaylandShellIntegration;
 class QWaylandCursor;
 class QWaylandCursorTheme;
+class EventThread;
 
 typedef void (*RegistryListener)(void *data,
                                  struct wl_registry *registry,
@@ -120,12 +121,6 @@ class Q_WAYLAND_CLIENT_EXPORT QWaylandDisplay : public QObject, public QtWayland
     Q_OBJECT
 
 public:
-    struct FrameQueue {
-        FrameQueue(wl_event_queue *q = nullptr) : queue(q), mutex(new QMutex) {}
-        wl_event_queue *queue;
-        QMutex *mutex;
-    };
-
     QWaylandDisplay(QWaylandIntegration *waylandIntegration);
     ~QWaylandDisplay(void) override;
 
@@ -212,12 +207,11 @@ public:
     void handleKeyboardFocusChanged(QWaylandInputDevice *inputDevice);
     void handleWindowDestroyed(QWaylandWindow *window);
 
-    wl_event_queue *createEventQueue();
-    FrameQueue createFrameQueue();
-    void destroyFrameQueue(const FrameQueue &q);
-    void dispatchQueueWhile(wl_event_queue *queue, std::function<bool()> condition, int timeout = -1);
+    wl_event_queue *frameEventQueue() { return m_frameEventQueue; };
 
     bool isKeyboardAvailable() const;
+
+    void initEventThread();
 public slots:
     void blockingReadEvents();
     void flushRequests();
@@ -240,6 +234,9 @@ private:
     };
 
     struct wl_display *mDisplay = nullptr;
+    QScopedPointer<EventThread> m_eventThread;
+    wl_event_queue *m_frameEventQueue = nullptr;
+    QScopedPointer<EventThread> m_frameEventQueueThread;
     QtWayland::wl_compositor mCompositor;
     QScopedPointer<QWaylandShm> mShm;
     QList<QWaylandScreen *> mWaitingScreens;
@@ -276,11 +273,9 @@ private:
     QWaylandInputDevice *mLastInputDevice = nullptr;
     QPointer<QWaylandWindow> mLastInputWindow;
     QPointer<QWaylandWindow> mLastKeyboardFocus;
-    QVector<QWaylandWindow *> mActiveWindows;
-    QVector<FrameQueue> mExternalQueues;
+    QList<QWaylandWindow *> mActiveWindows;
     struct wl_callback *mSyncCallback = nullptr;
     static const wl_callback_listener syncCallbackListener;
-    QReadWriteLock m_frameQueueLock;
 
     bool mClientSideInputContextRequested = !QPlatformInputContextFactory::requested().isNull();
 

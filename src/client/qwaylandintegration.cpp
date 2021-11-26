@@ -192,9 +192,7 @@ QAbstractEventDispatcher *QWaylandIntegration::createEventDispatcher() const
 
 void QWaylandIntegration::initialize()
 {
-    int fd = wl_display_get_fd(mDisplay->wl_display());
-    QSocketNotifier *sn = new QSocketNotifier(fd, QSocketNotifier::Read, mDisplay.data());
-    QObject::connect(sn, SIGNAL(activated(QSocketDescriptor)), mDisplay.data(), SLOT(flushRequests()));
+    mDisplay->initEventThread();
 
     // Call after eventDispatcher is fully connected, for QWaylandDisplay::forceRoundTrip()
     mDisplay->initialize();
