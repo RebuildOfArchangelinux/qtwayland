@@ -651,23 +651,18 @@ void QWaylandWindow::handleFrameCallback()
     mFrameCallbackElapsedTimer.invalidate();
 
     // The rest can wait until we can run it on the correct thread
-    if (!mWaitingForUpdateDelivery) {
-        auto doHandleExpose = [this]() {
-            bool wasExposed = isExposed();
-            mFrameCallbackTimedOut = false;
-            if (!wasExposed && isExposed()) // Did setting mFrameCallbackTimedOut make the window exposed?
-                sendExposeEvent(QRect(QPoint(), geometry().size()));
-            if (wasExposed && hasPendingUpdateRequest())
-                deliverUpdateRequest();
+    auto doHandleExpose = [this]() {
+        bool wasExposed = isExposed();
+        mFrameCallbackTimedOut = false;
+        if (!wasExposed && isExposed()) // Did setting mFrameCallbackTimedOut make the window exposed?
+            sendExposeEvent(QRect(QPoint(), geometry().size()));
+        if (wasExposed && hasPendingUpdateRequest())
+            deliverUpdateRequest();
+    };
 
-            mWaitingForUpdateDelivery = false;
-        };
-
-        // Queued connection, to make sure we don't call handleUpdate() from inside waitForFrameSync()
-        // in the single-threaded case.
-        mWaitingForUpdateDelivery = true;
-        QMetaObject::invokeMethod(this, doHandleExpose, Qt::QueuedConnection);
-    }
+    // Queued connection, to make sure we don't call handleUpdate() from inside waitForFrameSync()
+    // in the single-threaded case.
+    QMetaObject::invokeMethod(this, doHandleExpose, Qt::QueuedConnection);
 
     mFrameSyncWait.notify_all();
 }
