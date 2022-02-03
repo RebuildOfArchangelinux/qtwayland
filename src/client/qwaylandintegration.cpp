@@ -491,7 +491,7 @@ void QWaylandIntegration::reconfigureInputContext()
     }
 #endif
 
-    qCDebug(lcQpaWayland) << "using input method:" << inputContext()->metaObject()->className();
+    qCDebug(lcQpaWayland) << "using input method:" << (inputContext() ? inputContext()->metaObject()->className() : "<none>");
 }
 
 QWaylandShellIntegration *QWaylandIntegration::createShellIntegration(const QString &integrationName)
