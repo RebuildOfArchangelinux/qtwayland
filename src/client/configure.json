@@ -149,8 +149,7 @@
                     "#endif"
                 ]
             },
-            "libs": "-ldrm",
-            "use": "egl"
+            "use": "drm egl"
         },
         "vulkan-server-buffer": {
             "label": "Vulkan Buffer Sharing",
@@ -168,7 +167,8 @@
                     "exportAllocInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;",
                     "return 0;"
                 ]
-            }
+            },
+            "use": "wayland-client"
         },
         "egl_1_5-wayland": {
             "label": "EGL 1.5 with Wayland Platform",
@@ -183,7 +183,7 @@
                     "eglGetPlatformDisplay(EGL_PLATFORM_WAYLAND_EXT, (struct wl_display *)(nullptr), nullptr);"
                 ]
             },
-            "use": "egl"
+            "use": "egl wayland-client"
         }
     },
 

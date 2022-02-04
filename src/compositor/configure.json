@@ -7,6 +7,31 @@
     "testDir": "../../config.tests",
 
     "libraries": {
+        "wayland-client": {
+            "label": "Wayland client library",
+            "headers": "wayland-version.h",
+            "test": {
+                "main": [
+                    "#if WAYLAND_VERSION_MAJOR < 1",
+                    "# error Wayland 1.8.0 or higher required",
+                    "#endif",
+                    "#if WAYLAND_VERSION_MAJOR == 1",
+                    "# if WAYLAND_VERSION_MINOR < 8",
+                    "#  error Wayland 1.8.0 or higher required",
+                    "# endif",
+                    "# if WAYLAND_VERSION_MINOR == 8",
+                    "#  if WAYLAND_VERSION_MICRO < 0",
+                    "#   error Wayland 1.8.0 or higher required",
+                    "#  endif",
+                    "# endif",
+                    "#endif"
+                 ]
+            },
+            "sources": [
+                { "type": "pkgConfig", "args": "wayland-client" },
+                "-lwayland-client"
+            ]
+        },
         "wayland-server": {
             "label": "wayland-server",
             "headers": "wayland-version.h",
@@ -151,8 +176,7 @@
                     "#endif"
                 ]
             },
-            "libs": "-ldrm",
-            "use": "egl"
+            "use": "drm egl"
         },
         "dmabuf-client-buffer": {
             "label": "Linux Client dma-buf Buffer Sharing",
@@ -176,8 +200,7 @@
                     "return 0;"
                 ]
             },
-            "libs": "-ldrm",
-            "use": "egl"
+            "use": "drm egl"
         },
         "vulkan-server-buffer": {
             "label": "Vulkan Buffer Sharing",
@@ -195,7 +218,8 @@
                     "exportAllocInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR;",
                     "return 0;"
                 ]
-            }
+            },
+            "use": "wayland-client"
         }
     },
 
