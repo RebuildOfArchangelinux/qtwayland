@@ -72,6 +72,7 @@
 #endif
 
 struct wl_cursor_image;
+struct wp_viewport;
 
 QT_BEGIN_NAMESPACE
 
@@ -83,6 +84,8 @@ class QPlatformPlaceholderScreen;
 namespace QtWayland {
     class qt_surface_extension;
     class zwp_text_input_manager_v2;
+    class wp_viewporter;
+    class wp_fractional_scale_manager_v1;
 }
 
 namespace QtWaylandClient {
@@ -143,6 +146,7 @@ public:
     struct wl_surface *createSurface(void *handle);
     struct ::wl_region *createRegion(const QRegion &qregion);
     struct ::wl_subsurface *createSubSurface(QWaylandWindow *window, QWaylandWindow *parent);
+    struct ::wp_viewport *createViewport(QWaylandWindow *window);
 
     QWaylandShellIntegration *shellIntegration() const;
     QWaylandClientBufferIntegration *clientBufferIntegration() const;
@@ -174,6 +178,8 @@ public:
     QtWayland::zwp_text_input_manager_v2 *textInputManager() const { return mTextInputManager.data(); }
     QWaylandHardwareIntegration *hardwareIntegration() const { return mHardwareIntegration.data(); }
     QWaylandXdgOutputManagerV1 *xdgOutputManager() const { return mXdgOutputManager.data(); }
+    QtWayland::wp_fractional_scale_manager_v1 *fractionalScaleManager() const { return mFractionalScaleManager.data(); }
+    QtWayland::wp_viewporter *viewporter() const { return mViewporter.data(); }
 
     struct RegistryGlobal {
         uint32_t id;
@@ -265,6 +271,8 @@ private:
     QScopedPointer<QWaylandHardwareIntegration> mHardwareIntegration;
     QScopedPointer<QWaylandXdgOutputManagerV1> mXdgOutputManager;
     QSocketNotifier *mReadNotifier = nullptr;
+    QScopedPointer<QtWayland::wp_viewporter> mViewporter;
+    QScopedPointer<QtWayland::wp_fractional_scale_manager_v1> mFractionalScaleManager;
     int mFd = -1;
     int mWritableNotificationFd = -1;
     QList<RegistryGlobal> mGlobals;

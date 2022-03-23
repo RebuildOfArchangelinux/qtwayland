@@ -43,7 +43,9 @@ DefaultCompositor::DefaultCompositor()
         output->m_data.physicalSize = output->m_data.mode.physicalSizeForDpi(96);
         add<Seat>(Seat::capability_pointer | Seat::capability_keyboard | Seat::capability_touch);
         add<XdgWmBase>();
-        add<Shm>();
+        add<FractionalScaleManager>();
+        add<Viewporter>();
+
         // TODO: other shells, viewporter, xdgoutput etc
 
         QObject::connect(get<WlCompositor>(), &WlCompositor::surfaceCreated, [&] (Surface *surface){
