@@ -239,6 +239,7 @@ bool QWaylandWindow::shouldCreateSubSurface() const
 
 void QWaylandWindow::reset()
 {
+    closeChildPopups();
     delete mShellSurface;
     mShellSurface = nullptr;
     delete mSubSurfaceWindow;
@@ -397,21 +398,6 @@ void QWaylandWindow::sendExposeEvent(const QRect &rect)
     mLastExposeGeometry = rect;
 }
 
-
-static QVector<QPointer<QWaylandWindow>> activePopups;
-
-void QWaylandWindow::closePopups(QWaylandWindow *parent)
-{
-    while (!activePopups.isEmpty()) {
-        auto popup = activePopups.takeLast();
-        if (popup.isNull())
-            continue;
-        if (popup.data() == parent)
-            return;
-        popup->reset();
-    }
-}
-
 QPlatformScreen *QWaylandWindow::calculateScreenFromSurfaceEvents() const
 {
     QReadLocker lock(&mSurfaceLock);
@@ -431,8 +417,6 @@ void QWaylandWindow::setVisible(bool visible)
     lastVisible = visible;
 
     if (visible) {
-        if (window()->type() == Qt::Popup || window()->type() == Qt::ToolTip)
-            activePopups << this;
         initWindow();
 
         setGeometry(windowGeometry());
@@ -441,7 +425,6 @@ void QWaylandWindow::setVisible(bool visible)
         // QWaylandShmBackingStore::beginPaint().
     } else {
         sendExposeEvent(QRect());
-        closePopups(this);
         reset();
     }
 }
@@ -1290,6 +1273,20 @@ void QWaylandWindow::setOpaqueArea(const QRegion &opaqueArea)
     wl_region_destroy(region);
 }
 
+void QWaylandWindow::addChildPopup(QWaylandWindow *surface) {
+    mChildPopups.append(surface);
+}
+
+void QWaylandWindow::removeChildPopup(QWaylandWindow *surface) {
+    mChildPopups.removeAll(surface);
+}
+
+void QWaylandWindow::closeChildPopups() {
+    while (!mChildPopups.isEmpty()) {
+        auto popup = mChildPopups.takeLast();
+        popup->reset();
+    }
+}
 }
 
 QT_END_NAMESPACE

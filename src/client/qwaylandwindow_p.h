@@ -207,6 +207,10 @@ public:
     void handleUpdate();
     void deliverUpdateRequest() override;
 
+    void addChildPopup(QWaylandWindow* child);
+    void removeChildPopup(QWaylandWindow* child);
+    void closeChildPopups();
+
 public slots:
     void applyConfigure();
 
@@ -261,6 +265,8 @@ protected:
     QWaylandShmBackingStore *mBackingStore = nullptr;
     QWaylandBuffer *mQueuedBuffer = nullptr;
     QRegion mQueuedBufferDamage;
+
+    QList<QPointer<QWaylandWindow>> mChildPopups;
 
 private:
     void setGeometry_helper(const QRect &rect);

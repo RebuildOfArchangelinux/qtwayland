@@ -195,12 +195,17 @@ QtWayland::xdg_toplevel::resize_edge QWaylandXdgSurface::Toplevel::convertToResi
                 | ((edges & Qt::RightEdge) ? resize_edge_right : 0));
 }
 
-QWaylandXdgSurface::Popup::Popup(QWaylandXdgSurface *xdgSurface, QWaylandXdgSurface *parent,
+QWaylandXdgSurface::Popup::Popup(QWaylandXdgSurface *xdgSurface, QWaylandWindow *parent,
                                  QtWayland::xdg_positioner *positioner)
-    : xdg_popup(xdgSurface->get_popup(parent->object(), positioner->object()))
-    , m_xdgSurface(xdgSurface)
+    : m_xdgSurface(xdgSurface)
+    , m_parentXdgSurface(qobject_cast<QWaylandXdgSurface *>(parent->shellSurface()))
     , m_parent(parent)
 {
+
+    init(xdgSurface->get_popup(m_parentXdgSurface ? m_parentXdgSurface->object() : nullptr, positioner->object()));
+    if (m_parent) {
+        m_parent->addChildPopup(m_xdgSurface->window());
+    }
 }
 
 QWaylandXdgSurface::Popup::~Popup()
@@ -208,10 +213,14 @@ QWaylandXdgSurface::Popup::~Popup()
     if (isInitialized())
         destroy();
 
+    if (m_parent) {
+        m_parent->removeChildPopup(m_xdgSurface->window());
+    }
+
     if (m_grabbing) {
         auto *shell = m_xdgSurface->m_shell;
         Q_ASSERT(shell->m_topmostGrabbingPopup == this);
-        shell->m_topmostGrabbingPopup = m_parent->m_popup;
+        shell->m_topmostGrabbingPopup = m_parentXdgSurface ? m_parentXdgSurface->m_popup : nullptr;
     }
 }
 
@@ -392,8 +401,6 @@ void QWaylandXdgSurface::setPopup(QWaylandWindow *parent)
 {
     Q_ASSERT(!m_toplevel && !m_popup);
 
-    auto parentXdgSurface = static_cast<QWaylandXdgSurface *>(parent->shellSurface());
-
     auto positioner = new QtWayland::xdg_positioner(m_shell->create_positioner());
     // set_popup expects a position relative to the parent
     QPoint transientPos = m_window->geometry().topLeft(); // this is absolute
@@ -406,8 +413,9 @@ void QWaylandXdgSurface::setPopup(QWaylandWindow *parent)
     positioner->set_anchor(QtWayland::xdg_positioner::anchor_top_left);
     positioner->set_gravity(QtWayland::xdg_positioner::gravity_bottom_right);
     positioner->set_size(m_window->geometry().width(), m_window->geometry().height());
-    m_popup = new Popup(this, parentXdgSurface, positioner);
+    m_popup = new Popup(this, parent, positioner);
     positioner->destroy();
+
     delete positioner;
 }
 
