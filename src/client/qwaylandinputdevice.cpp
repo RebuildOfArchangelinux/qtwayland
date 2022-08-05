@@ -1388,6 +1388,7 @@ void QWaylandInputDevice::Touch::touch_cancel()
     if (touchExt)
         touchExt->touchCanceled();
 
+    mFocus = nullptr;
     QWindowSystemInterface::handleTouchCancelEvent(nullptr, mParent->mTouchDevice);
 }
 
