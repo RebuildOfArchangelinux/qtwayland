@@ -665,9 +665,9 @@ void tst_seatv5::cancelTouch()
     {
         auto e = window.m_events.takeFirst();
         QCOMPARE(e.type, QEvent::TouchBegin);
-        QCOMPARE(e.touchPointStates, QEventPoint::State::Pressed);
+        QCOMPARE(e.touchPointStates, Qt::TouchPointPressed);
         QCOMPARE(e.touchPoints.length(), 1);
-        QCOMPARE(e.touchPoints.first().position(), QPointF(32-window.frameMargins().left(), 32-window.frameMargins().top()));
+        QCOMPARE(e.touchPoints.first().pos(), QPointF(32-window.frameMargins().left(), 32-window.frameMargins().top()));
     }
     {
         auto e = window.m_events.takeFirst();
