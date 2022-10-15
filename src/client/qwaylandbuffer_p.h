@@ -70,7 +70,7 @@ public:
 
     wl_buffer *buffer() {return mBuffer;}
     virtual QSize size() const = 0;
-    virtual int scale() const { return 1; }
+    virtual qreal scale() const { return 1; }
 
     void setBusy() { mBusy = true; }
     bool busy() const { return mBusy; }

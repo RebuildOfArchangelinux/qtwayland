@@ -43,6 +43,7 @@
 #include "qwaylanddisplay_p.h"
 #include "qwaylandsurface_p.h"
 #include "qwaylandinputdevice_p.h"
+#include "qwaylandfractionalscale_p.h"
 #include "qwaylandscreen_p.h"
 #include "qwaylandshellsurface_p.h"
 #include "qwaylandsubsurface_p.h"
@@ -52,6 +53,7 @@
 #include "qwaylanddecorationfactory_p.h"
 #include "qwaylandshmbackingstore_p.h"
 #include "qwaylandshellintegration_p.h"
+#include "qwaylandviewport_p.h"
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QPointer>
@@ -64,6 +66,8 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
+
+#include <QtWaylandClient/private/qwayland-wp-fractional-scale-v1.h>
 
 QT_BEGIN_NAMESPACE
 
@@ -126,6 +130,23 @@ void QWaylandWindow::initWindow()
         initializeWlSurface();
     }
 
+    if (mDisplay->fractionalScaleManager()) {
+        mFractionalScale.reset(new QWaylandFractionalScale(mDisplay->fractionalScaleManager()->get_fractional_scale(mSurface->object())));
+
+        mScale = mFractionalScale->preferredScale();
+        connect(mFractionalScale.data(), &QWaylandFractionalScale::preferredScaleChanged, this, [this]() {
+            if (mScale == mFractionalScale->preferredScale()) {
+                return;
+            }
+            mScale = mFractionalScale->preferredScale();
+            // Dave - are we missing handling QQuickWidget?
+            ensureSize();
+            if (mViewport)
+                updateViewport();
+            sendExposeEvent(QRect(QPoint(), geometry().size()));
+        });
+    }
+
     if (shouldCreateSubSurface()) {
         Q_ASSERT(!mSubSurfaceWindow);
 
@@ -181,11 +202,15 @@ void QWaylandWindow::initWindow()
         }
     }
 
+    if (display()->viewporter() && !window()->flags().testFlag(Qt::BypassWindowManagerHint)) {
+        mViewport.reset(new QWaylandViewport(display()->createViewport(this)));
+    }
+
     // Enable high-dpi rendering. Scale() returns the screen scale factor and will
     // typically be integer 1 (normal-dpi) or 2 (high-dpi). Call set_buffer_scale()
     // to inform the compositor that high-resolution buffers will be provided.
     if (mDisplay->compositorVersion() >= 3)
-        mSurface->set_buffer_scale(scale());
+        mSurface->set_buffer_scale(std::floor(scale()));
 
     if (QScreen *s = window()->screen())
         setOrientationMask(s->orientationUpdateMask());
@@ -244,6 +269,8 @@ void QWaylandWindow::reset()
     mShellSurface = nullptr;
     delete mSubSurfaceWindow;
     mSubSurfaceWindow = nullptr;
+    mViewport.reset();
+    mFractionalScale.reset();
 
     invalidateSurface();
     if (mSurface) {
@@ -337,6 +364,8 @@ void QWaylandWindow::setGeometry_helper(const QRect &rect)
     QPlatformWindow::setGeometry(QRect(rect.x(), rect.y(),
                 qBound(minimum.width(), rect.width(), maximum.width()),
                 qBound(minimum.height(), rect.height(), maximum.height())));
+    if (mViewport)
+        updateViewport();
 
     if (mSubSurfaceWindow) {
         QMargins m = QPlatformWindow::parent()->frameMargins();
@@ -375,6 +404,11 @@ void QWaylandWindow::setGeometry(const QRect &rect)
 
     if (isOpaque() && mMask.isEmpty())
         setOpaqueArea(QRect(QPoint(0, 0), rect.size()));
+}
+
+void QWaylandWindow::updateViewport()
+{
+    mViewport->setDestination(window()->size());
 }
 
 void QWaylandWindow::resizeFromApplyConfigure(const QSize &sizeWithMargins, const QPoint &offset)
@@ -564,9 +598,9 @@ void QWaylandWindow::damage(const QRect &rect)
     if (mSurface == nullptr)
         return;
 
-    const int s = scale();
+    const qreal s = scale();
     if (mDisplay->compositorVersion() >= 4)
-        mSurface->damage_buffer(s * rect.x(), s * rect.y(), s * rect.width(), s * rect.height());
+        mSurface->damage_buffer(std::floor(s * rect.x()), std::floor(s * rect.y()), std::ceil(s * rect.width()), std::ceil(s * rect.height()));
     else
         mSurface->damage(rect.x(), rect.y(), rect.width(), rect.height());
 }
@@ -605,7 +639,7 @@ void QWaylandWindow::commit(QWaylandBuffer *buffer, const QRegion &damage)
 
     attachOffset(buffer);
     if (mDisplay->compositorVersion() >= 4) {
-        const int s = scale();
+        const qreal s = scale();
         for (const QRect &rect: damage)
             mSurface->damage_buffer(s * rect.x(), s * rect.y(), s * rect.width(), s * rect.height());
     } else {
@@ -1031,14 +1065,25 @@ void QWaylandWindow::handleScreensChanged()
     if (newScreen == mLastReportedScreen)
         return;
 
+    if (mLastReportedScreen)
+
     QWindowSystemInterface::handleWindowScreenChanged(window(), newScreen->QPlatformScreen::screen());
     mLastReportedScreen = newScreen;
 
-    int scale = newScreen->isPlaceholder() ? 1 : static_cast<QWaylandScreen *>(newScreen)->scale();
+    if (mFractionalScale) {
+        return;
+    }
+
+    int scale = mLastReportedScreen->isPlaceholder() ? 1 : static_cast<QWaylandScreen *>(mLastReportedScreen)->scale();
+
     if (scale != mScale) {
         mScale = scale;
-        if (mSurface && mDisplay->compositorVersion() >= 3)
-            mSurface->set_buffer_scale(mScale);
+        if (mSurface) {
+            if (mViewport)
+                updateViewport();
+            else if (mDisplay->compositorVersion() >= 3)
+                mSurface->set_buffer_scale(mScale);
+        }
         ensureSize();
     }
 }
@@ -1083,7 +1128,7 @@ bool QWaylandWindow::isActive() const
     return mDisplay->isWindowActivated(this);
 }
 
-int QWaylandWindow::scale() const
+qreal QWaylandWindow::scale() const
 {
     return mScale;
 }
