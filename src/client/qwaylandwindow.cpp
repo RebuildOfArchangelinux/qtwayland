@@ -1065,7 +1065,7 @@ void QWaylandWindow::handleScreensChanged()
     if (newScreen == mLastReportedScreen)
         return;
 
-    if (mLastReportedScreen)
+    // if (mLastReportedScreen)
 
     QWindowSystemInterface::handleWindowScreenChanged(window(), newScreen->QPlatformScreen::screen());
     mLastReportedScreen = newScreen;
