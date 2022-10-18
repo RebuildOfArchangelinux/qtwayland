@@ -600,33 +600,6 @@ QByteArray QWaylandTextInput::interfaceName()
     return QWaylandTextInputPrivate::interfaceName();
 }
 
-
-void QWaylandTextInput::sendModifiersMap(const QByteArray &modifiersMap)
-{
-    Q_D(QWaylandTextInput);
-
-    const QList<QByteArray> modifiers = modifiersMap.split('\0');
-
-    int numModifiers = modifiers.size();
-    if (modifiers.last().isEmpty())
-        numModifiers--;
-
-    for (int i = 0; i < numModifiers; ++i) {
-        const auto modString = modifiers.at(i);
-        if (modString == XKB_MOD_NAME_SHIFT)
-            d->shiftModifierMask = 1 << i;
-        else if (modString == XKB_MOD_NAME_CTRL)
-            d->controlModifierMask = 1 << i;
-        else if (modString == XKB_MOD_NAME_ALT)
-            d->altModifierMask = 1 << i;
-        else if (modString == XKB_MOD_NAME_LOGO)
-            d->metaModifierMask = 1 << i;
-        else
-            qCDebug(qLcWaylandCompositorInputMethods) << "unsupported modifier name " << modString;
-    }
-    d->sendModifiersMap(modifiersMap);
-}
-
 QT_END_NAMESPACE
 
 #include "moc_qwaylandtextinput.cpp"
